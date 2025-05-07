@@ -32,10 +32,10 @@ This file contains all the tests we need to implement for the Elixir AI SDK, bas
 - [x] **Provider Metadata**
   - [x] Include provider metadata in response (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:352-376`)
 
-- [ ] **Response Message Handling**
-  - [ ] Include assistant messages with no tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:378-392`)
-  - [ ] Include assistant and tool messages when there are tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:394-435`)
-  - [ ] Include reasoning in messages (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:437-446`)
+- [x] **Response Message Handling**
+  - [x] Include assistant messages with no tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:378-392`)
+  - [x] Include assistant and tool messages when there are tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:394-435`)
+  - [x] Include reasoning in messages (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:437-446`)
 
 - [ ] **Request/Response Info**
   - [ ] Include request body (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:448-467`)
