@@ -6,4 +6,4 @@ defmodule AI.Provider.Utils.Headers do
   def combine(default_headers, additional_headers) do
     Map.merge(default_headers, additional_headers)
   end
-end 
+end

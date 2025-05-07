@@ -4,4 +4,4 @@ defmodule AI.Provider.UnsupportedFunctionalityError do
   """
 
   defexception message: "Unsupported functionality"
-end 
+end

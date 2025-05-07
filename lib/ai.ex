@@ -9,6 +9,7 @@ defmodule AI do
   alias AI.Core.GenerateText
   alias AI.Providers.OpenAICompatible.Provider
   alias AI.Providers.OpenAICompatible.ChatLanguageModel
+  alias AI.Providers.OpenAI.ChatLanguageModel, as: OpenAIChatLanguageModel
 
   @doc """
   Generates text using an AI model.
@@ -73,5 +74,69 @@ defmodule AI do
 
     # Create the chat language model
     ChatLanguageModel.new(provider, Map.put(opts, :model_id, model_id))
+  end
+
+  @doc """
+  Creates an OpenAI model with the specified model ID.
+
+  This function creates a model that uses the official OpenAI API.
+
+  ## Options
+    * `:api_key` - The API key to use for authentication (default: OPENAI_API_KEY environment variable)
+    * `:base_url` - The base URL of the API (default: "https://api.openai.com")
+    * `:structured_outputs` - Whether the model supports structured outputs (default: false)
+    * `:use_legacy_function_calling` - Whether to use legacy function calling format (default: false)
+    * `:reasoning_effort` - For O-series models (o1, o3), controls the reasoning effort (low, medium, high)
+
+  ## Examples
+
+      model = AI.openai("gpt-4")
+      
+      # With custom API key
+      model = AI.openai("gpt-4", api_key: "your-api-key")
+      
+      # With structured outputs
+      model = AI.openai("gpt-4", structured_outputs: true)
+      
+      # With reasoning effort for O-series models
+      model = AI.openai("o1-mini", reasoning_effort: "high")
+  """
+  @spec openai(String.t(), keyword() | map()) :: struct()
+  def openai(model_id, opts \\ %{}) do
+    # Convert keyword list to map if needed
+    opts = if Keyword.keyword?(opts), do: Map.new(opts), else: opts
+
+    # Get API key from options or environment variable
+    api_key = Map.get(opts, :api_key) || System.get_env("OPENAI_API_KEY")
+
+    # Get base URL from options or use default
+    base_url = Map.get(opts, :base_url, "https://api.openai.com")
+
+    # Extract settings from options
+    settings =
+      Map.take(opts, [:structured_outputs, :use_legacy_function_calling, :reasoning_effort])
+
+    # Configure headers function
+    headers_fn = fn ->
+      %{
+        "Authorization" => "Bearer #{api_key}",
+        "Content-Type" => "application/json"
+      }
+    end
+
+    # Configure URL function
+    url_fn = fn %{path: path} ->
+      "#{String.trim_trailing(base_url, "/")}/v1#{path}"
+    end
+
+    # Create the config
+    config = %{
+      provider: "openai",
+      headers: headers_fn,
+      url: url_fn
+    }
+
+    # Create the OpenAI chat language model
+    OpenAIChatLanguageModel.new(model_id, settings, config)
   end
 end

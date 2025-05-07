@@ -7,11 +7,11 @@ defmodule AI.Providers.OpenAI.ChatMessages do
   @type system_message_mode :: :system | :developer | :remove
   @type warning :: %{type: :other, message: String.t()}
   @type message :: %{
-    role: String.t(),
-    content: String.t() | list(map()),
-    function_call: map() | nil,
-    tool_calls: list(map()) | nil
-  }
+          role: String.t(),
+          content: String.t() | list(map()),
+          function_call: map() | nil,
+          tool_calls: list(map()) | nil
+        }
 
   @doc """
   Converts messages to OpenAI chat format.
@@ -26,7 +26,9 @@ defmodule AI.Providers.OpenAI.ChatMessages do
 
     {messages, warnings} =
       Enum.reduce(prompt, {[], []}, fn {role, content}, {acc_messages, acc_warnings} ->
-        {new_messages, new_warnings} = process_message(role, content, use_legacy_function_calling, system_message_mode)
+        {new_messages, new_warnings} =
+          process_message(role, content, use_legacy_function_calling, system_message_mode)
+
         {acc_messages ++ new_messages, acc_warnings ++ new_warnings}
       end)
 
@@ -62,7 +64,9 @@ defmodule AI.Providers.OpenAI.ChatMessages do
             :image ->
               url =
                 case part.image do
-                  %URI{} -> URI.to_string(part.image)
+                  %URI{} ->
+                    URI.to_string(part.image)
+
                   _ ->
                     mime_type = part.mime_type || "image/jpeg"
                     "data:#{mime_type};base64,#{Base.encode64(part.image)}"
@@ -137,6 +141,7 @@ defmodule AI.Providers.OpenAI.ChatMessages do
                 arguments: Jason.encode!(part.args)
               }
             }
+
             {acc_text, acc_tool_calls ++ [tool_call]}
         end
       end)
@@ -200,4 +205,4 @@ defmodule AI.Providers.OpenAI.ChatMessages do
   defp process_message(role, _content, _use_legacy_function_calling, _system_message_mode) do
     raise "Unsupported role: #{role}"
   end
-end 
+end

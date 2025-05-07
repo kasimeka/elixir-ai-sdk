@@ -23,7 +23,7 @@ end
 
 ```elixir
 {:ok, result} = AI.generate_text(%{
-  model: AI.provider_openai("gpt-4o"),
+  model: AI.openai("gpt-4o"),
   system: "You are a friendly assistant!",
   prompt: "Why is the sky blue?"
 })

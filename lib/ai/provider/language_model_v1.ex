@@ -10,4 +10,4 @@ defmodule AI.Provider.LanguageModelV1 do
   @callback supports_image_urls?(term()) :: boolean()
   @callback do_generate(term(), map()) :: {:ok, map()} | {:error, term()}
   @callback do_stream(term(), map()) :: {:ok, map()} | {:error, term()}
-end 
+end
