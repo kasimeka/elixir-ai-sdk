@@ -19,8 +19,11 @@ defmodule AI.Core.GenerateText do
     # Extract the model from options
     model = Map.get(options, :model)
 
+    # Process the options to convert prompt to messages if needed
+    processed_options = process_input_options(options)
+
     # Dispatch to the appropriate model's do_generate function based on type
-    with {:ok, response} <- dispatch_to_model(model, options) do
+    with {:ok, response} <- dispatch_to_model(model, processed_options) do
       # Transform the model response into our standardized result format
       result = %{
         text: Map.get(response, :text, ""),
@@ -37,6 +40,50 @@ defmodule AI.Core.GenerateText do
       }
 
       {:ok, result}
+    end
+  end
+
+  # Process input options to handle prompt vs messages
+  defp process_input_options(options) do
+    # Handle system message
+    messages = process_system_message(options)
+
+    # Handle prompt (text string) vs messages (array)
+    messages =
+      case {Map.get(options, :prompt), Map.get(options, :messages)} do
+        {nil, messages} when is_list(messages) ->
+          # User provided :messages, use as is
+          messages
+
+        {prompt, nil} when is_binary(prompt) ->
+          # User provided :prompt, convert to a user message
+          messages ++ [%{role: "user", content: prompt}]
+
+        {prompt, _messages} when is_binary(prompt) ->
+          # Both :prompt and :messages were provided, prioritize :prompt
+          # by converting it to a user message and appending it to existing messages
+          messages ++ [%{role: "user", content: prompt}]
+
+        {nil, nil} ->
+          # Neither provided, return empty messages
+          messages
+      end
+
+    # Update options with the processed messages
+    options
+    |> Map.put(:messages, messages)
+    # Remove :prompt as we've converted it to a message
+    |> Map.delete(:prompt)
+  end
+
+  # Process system message if present
+  defp process_system_message(options) do
+    case Map.get(options, :system) do
+      nil ->
+        []
+
+      system_content when is_binary(system_content) ->
+        [%{role: "system", content: system_content}]
     end
   end
 

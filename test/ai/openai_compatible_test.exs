@@ -108,5 +108,140 @@ defmodule AI.OpenAICompatibleTest do
       assert result.usage.completion_tokens == 20
       assert result.usage.total_tokens == 30
     end
+
+    test "properly handles prompt parameter by converting it to a message" do
+      # Define the mock API response
+      mock_response = %{
+        "id" => "chatcmpl-abc123",
+        "object" => "chat.completion",
+        "created" => 1_677_858_242,
+        "model" => "gpt-3.5-turbo",
+        "usage" => %{
+          "prompt_tokens" => 10,
+          "completion_tokens" => 20,
+          "total_tokens" => 30
+        },
+        "choices" => [
+          %{
+            "message" => %{
+              "role" => "assistant",
+              "content" => "Hello, how can I help you today?"
+            },
+            "finish_reason" => "stop",
+            "index" => 0
+          }
+        ]
+      }
+
+      # Setup the mock to verify we're sending proper messages to the API
+      expect(Tesla.MockAdapter, :call, fn %{method: :post, body: body} = env, _opts ->
+        # Assert the request URL is correct
+        assert env.url == "https://api.example.com/v1/chat/completions"
+
+        # Decode the request body to check the messages
+        decoded_body = Jason.decode!(body)
+
+        # Verify messages array contains the properly formatted messages
+        assert is_list(decoded_body["messages"])
+
+        # Should have a system message and a user message
+        assert length(decoded_body["messages"]) == 2
+
+        # Verify system message content
+        assert Enum.at(decoded_body["messages"], 0) == %{
+                 "role" => "system",
+                 "content" => "You are a helpful assistant."
+               }
+
+        # Verify prompt was converted to a user message
+        assert Enum.at(decoded_body["messages"], 1) == %{
+                 "role" => "user",
+                 "content" => "Hello, assistant!"
+               }
+
+        # Return a successful response
+        {:ok, %Tesla.Env{status: 200, body: mock_response}}
+      end)
+
+      # Create an OpenAI-compatible model
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+
+      # Use the model with generate_text using a prompt parameter instead of messages
+      {:ok, result} =
+        AI.generate_text(%{
+          model: model,
+          system: "You are a helpful assistant.",
+          prompt: "Hello, assistant!"
+        })
+
+      # Verify the result
+      assert result.text == "Hello, how can I help you today?"
+    end
+
+    test "properly handles both system parameter and prompt parameter" do
+      # Define the mock API response
+      mock_response = %{
+        "id" => "chatcmpl-abc123",
+        "object" => "chat.completion",
+        "created" => 1_677_858_242,
+        "model" => "gpt-3.5-turbo",
+        "usage" => %{
+          "prompt_tokens" => 15,
+          "completion_tokens" => 25,
+          "total_tokens" => 40
+        },
+        "choices" => [
+          %{
+            "message" => %{
+              "role" => "assistant",
+              "content" => "I'll answer your astronomy questions."
+            },
+            "finish_reason" => "stop",
+            "index" => 0
+          }
+        ]
+      }
+
+      # Setup the mock to verify we're sending proper messages to the API
+      expect(Tesla.MockAdapter, :call, fn %{method: :post, body: body} = _env, _opts ->
+        # Decode the request body to check the messages
+        decoded_body = Jason.decode!(body)
+
+        # Verify messages array contains the properly formatted messages
+        assert is_list(decoded_body["messages"])
+
+        # Should have a system message and a user message
+        assert length(decoded_body["messages"]) == 2
+
+        # Verify system message content
+        assert Enum.at(decoded_body["messages"], 0) == %{
+                 "role" => "system",
+                 "content" => "You are an astronomy expert."
+               }
+
+        # Verify prompt was converted to a user message
+        assert Enum.at(decoded_body["messages"], 1) == %{
+                 "role" => "user",
+                 "content" => "Tell me about stars."
+               }
+
+        # Return a successful response
+        {:ok, %Tesla.Env{status: 200, body: mock_response}}
+      end)
+
+      # Create an OpenAI-compatible model
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+
+      # Use the model with generate_text using both system and prompt parameters
+      {:ok, result} =
+        AI.generate_text(%{
+          model: model,
+          system: "You are an astronomy expert.",
+          prompt: "Tell me about stars."
+        })
+
+      # Verify the result
+      assert result.text == "I'll answer your astronomy questions."
+    end
   end
 end
