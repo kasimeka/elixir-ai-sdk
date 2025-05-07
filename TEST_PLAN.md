@@ -21,16 +21,16 @@ This file contains all the tests we need to implement for the Elixir AI SDK, bas
   - [ ] Track sources in step results (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:163-175`)
   - [ ] Track files in step results (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:177-189`)
 
-- [ ] **Tool Calls**
-  - [ ] Handle basic tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:192-275`)
-  - [ ] Type inference for tool calls (Note: Elixir requires different approach for type checking)
+- [x] **Tool Calls**
+  - [x] Handle basic tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:192-275`)
+  - [x] Type inference for tool calls (Note: Elixir requires different approach for type checking)
 
-- [ ] **Tool Results**
-  - [ ] Process and return tool results (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:278-349`)
-  - [ ] Type inference for tool results (Note: Elixir requires different approach for type checking)
+- [x] **Tool Results**
+  - [x] Process and return tool results (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:278-349`)
+  - [x] Type inference for tool results (Note: Elixir requires different approach for type checking)
 
-- [ ] **Provider Metadata**
-  - [ ] Include provider metadata in response (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:352-376`)
+- [x] **Provider Metadata**
+  - [x] Include provider metadata in response (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:352-376`)
 
 - [ ] **Response Message Handling**
   - [ ] Include assistant messages with no tool calls (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:378-392`)
@@ -46,11 +46,11 @@ This file contains all the tests we need to implement for the Elixir AI SDK, bas
   - [ ] Handle 2-steps with prepareStep (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:693-894`)
   - [ ] Handle 4-steps: initial + multiple continues (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:896-1183`)
 
-- [ ] **HTTP Headers**
-  - [ ] Pass headers to model (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:1186-1207`)
+- [x] **HTTP Headers**
+  - [x] Pass headers to model (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:1186-1207`)
 
-- [ ] **Provider Options**
-  - [ ] Pass provider options to model (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:1209-1229`)
+- [x] **Provider Options**
+  - [x] Pass provider options to model (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:1209-1229`)
 
 - [ ] **Abort Signal**
   - [ ] Forward abort signal to tool execution (`/vercel-ai-sdk/packages/ai/core/generate-text/generate-text.test.ts:1231-1274`)
