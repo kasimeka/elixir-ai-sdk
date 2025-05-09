@@ -32,9 +32,14 @@ defmodule AI.Providers.OpenAI.CompletionLanguageModel do
   Creates a new OpenAI completion language model instance with default settings.
   """
   def new(model_id) do
+    # Get API key from environment variable
+    api_key = System.get_env("OPENAI_API_KEY")
+
     new(model_id, %{}, %{
       provider: "openai",
-      headers: fn -> %{"Authorization" => "Bearer test"} end,
+      headers: fn ->
+        %{"Authorization" => "Bearer #{api_key}", "Content-Type" => "application/json"}
+      end,
       url: fn %{path: path} -> "https://api.openai.com/v1#{path}" end
     })
   end
@@ -76,10 +81,11 @@ defmodule AI.Providers.OpenAI.CompletionLanguageModel do
   # to the specific format expected by this module's get_args function
   defp convert_options(options) do
     # Extract prompt from messages
-    prompt = case options[:messages] do
-      [%{role: "user", content: content}] -> content
-      _ -> raise "Completion models only support a single user message"
-    end
+    prompt =
+      case options[:messages] do
+        [%{role: "user", content: content}] -> content
+        _ -> raise "Completion models only support a single user message"
+      end
 
     # Return the adapted options in the format expected by get_args
     %{
@@ -188,7 +194,8 @@ defmodule AI.Providers.OpenAI.CompletionLanguageModel do
           {:error, %UnsupportedFunctionalityError{functionality: "object-tool mode"}}
 
         _ ->
-          {:error, %UnsupportedFunctionalityError{functionality: "Unsupported mode type: #{mode.type}"}}
+          {:error,
+           %UnsupportedFunctionalityError{functionality: "Unsupported mode type: #{mode.type}"}}
       end
 
     args
@@ -269,4 +276,4 @@ defmodule AI.Providers.OpenAI.CompletionLanguageModel do
     # TODO: Implement stream simulation
     %{}
   end
-end 
+end

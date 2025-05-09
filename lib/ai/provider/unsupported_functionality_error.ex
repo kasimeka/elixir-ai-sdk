@@ -6,8 +6,8 @@ defmodule AI.Provider.UnsupportedFunctionalityError do
   defexception [:functionality]
 
   @type t :: %__MODULE__{
-    functionality: String.t()
-  }
+          functionality: String.t()
+        }
 
   def message(%__MODULE__{functionality: functionality}) do
     "Functionality not supported: #{functionality}"
