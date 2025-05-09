@@ -1,7 +1,15 @@
 defmodule AI.Provider.UnsupportedFunctionalityError do
   @moduledoc """
-  Exception raised when a functionality is not supported.
+  Error raised when a functionality is not supported by the model.
   """
 
-  defexception message: "Unsupported functionality"
+  defexception [:functionality]
+
+  @type t :: %__MODULE__{
+          functionality: String.t()
+        }
+
+  def message(%__MODULE__{functionality: functionality}) do
+    "Functionality not supported: #{functionality}"
+  end
 end

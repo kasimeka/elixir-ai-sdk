@@ -105,6 +105,12 @@ defmodule AI.Core.GenerateText do
     ChatLanguageModel.do_generate(model, options)
   end
 
+  defp dispatch_to_model(%AI.Providers.OpenAI.CompletionLanguageModel{} = model, options) do
+    # Use the OpenAI completion language model implementation
+    alias AI.Providers.OpenAI.CompletionLanguageModel
+    CompletionLanguageModel.do_generate(model, options)
+  end
+
   # Default catch-all for unsupported model types
   defp dispatch_to_model(model, _options) do
     {:error, "Unsupported model type: #{inspect(model)}"}
