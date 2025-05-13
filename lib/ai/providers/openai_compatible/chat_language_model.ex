@@ -5,6 +5,8 @@ defmodule AI.Providers.OpenAICompatible.ChatLanguageModel do
   This module implements the language model interface for OpenAI-compatible APIs.
   """
 
+  alias AI.Provider.Utils.EventSource
+
   defstruct [
     :provider,
     :model_id,
@@ -209,5 +211,91 @@ defmodule AI.Providers.OpenAICompatible.ChatLanguageModel do
   # Format provider name to handle dashes, underscores, etc.
   defp format_provider_name(name) when is_binary(name) do
     name
+  end
+
+  @doc """
+  Stream text generation using the OpenAI-compatible API.
+
+  This function enables streaming responses from the model, returning chunks
+  as they are generated rather than waiting for the complete response.
+
+  ## Options
+    * `:messages` - List of messages to send to the API (required)
+    * `:temperature` - Temperature for sampling (default: 1.0)
+    * `:max_tokens` - Maximum number of tokens to generate (optional)
+    * `:tools` - List of tools available to the model (optional)
+    * `:tool_choice` - Tool choice configuration (optional)
+    * `:response_format` - Response format configuration (optional)
+  """
+  def do_stream(model, opts) do
+    messages = Map.get(opts, :messages, [])
+
+    # Convert messages to OpenAI-compatible format
+    openai_messages = MessageConversion.convert_to_openai_compatible_chat_messages(messages)
+
+    # Build request body
+    request_body = %{
+      model: model.model_id,
+      messages: openai_messages,
+      stream: true
+    }
+
+    # Add optional parameters if provided
+    request_body = add_optional_params(request_body, opts)
+
+    # Create URL and headers
+    url = "#{model.provider.base_url}/v1/chat/completions"
+    headers = ensure_headers_map(model.provider.headers)
+
+    # Get the EventSource module to use (allows mocking)
+    event_source_module = Application.get_env(:ai_sdk, :event_source_module, EventSource)
+
+    # Make streaming API request
+    case event_source_module.post(url, request_body, headers, opts) do
+      {:ok, response} ->
+        stream = process_stream_events(response)
+
+        {:ok,
+         %{
+           stream: stream,
+           warnings: [],
+           raw_response: %{
+             request_body: request_body,
+             url: url
+           }
+         }}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  # Process streaming events into a unified stream
+  defp process_stream_events(response) do
+    # Use the OpenAI Compatible transformer to convert the raw stream to standardized events
+    alias AI.Stream.OpenAICompatibleTransformer
+    alias AI.Stream.Event
+
+    # Transform the response stream using our dedicated transformer
+    transformed_stream =
+      OpenAICompatibleTransformer.transform(response.stream, %{
+        detect_end_of_stream: true
+      })
+
+    # Convert the transformed stream (now containing Event structs) back to tuple format
+    Stream.map(transformed_stream, &Event.to_tuple/1)
+  end
+
+  # Convert headers to map format for EventSource
+  defp ensure_headers_map(headers) when is_list(headers) do
+    Enum.into(headers, %{})
+  end
+
+  defp ensure_headers_map(headers) when is_map(headers) do
+    headers
+  end
+
+  defp ensure_headers_map(_) do
+    %{}
   end
 end

@@ -7,6 +7,7 @@ defmodule AI do
   """
 
   alias AI.Core.GenerateText
+  alias AI.Core.StreamText
   alias AI.Providers.OpenAICompatible.Provider
   alias AI.Providers.OpenAICompatible.ChatLanguageModel
   alias AI.Providers.OpenAI.ChatLanguageModel, as: OpenAIChatLanguageModel
@@ -40,6 +41,65 @@ defmodule AI do
   @spec generate_text(map()) :: {:ok, map()} | {:error, any()}
   def generate_text(options) do
     GenerateText.generate_text(options)
+  end
+
+  @doc """
+  Streams text generation from an AI model, returning chunks as they are generated.
+
+  ## Options
+
+    * `:model` - The language model to use
+    * `:system` - A system message that will be part of the prompt
+    * `:prompt` - A simple text prompt (can use either prompt or messages)
+    * `:messages` - A list of messages (can use either prompt or messages)
+    * `:max_tokens` - Maximum number of tokens to generate
+    * `:temperature` - Temperature setting for randomness
+    * `:top_p` - Nucleus sampling
+    * `:top_k` - Top-k sampling
+    * `:frequency_penalty` - Penalize new tokens based on their frequency
+    * `:presence_penalty` - Penalize new tokens based on their presence
+    * `:tools` - Tools that are accessible to and can be called by the model
+
+  ## Examples
+
+      {:ok, result} = AI.stream_text(%{
+        model: AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com"),
+        system: "You are a friendly assistant!",
+        prompt: "Why is the sky blue?"
+      })
+
+      # Process chunks as they arrive - each chunk is a string
+      result.stream
+      |> Stream.each(&IO.write/1)
+      |> Stream.run()
+
+      # Or collect all chunks into a single string
+      full_text = Enum.join(result.stream, "")
+  """
+  @spec stream_text(map()) :: {:ok, map()} | {:error, any()}
+  def stream_text(options) do
+    case StreamText.stream_text(options) do
+      {:ok, result} ->
+        # Convert the event-based stream to a simple text stream
+        text_only_stream =
+          result.stream
+          |> Stream.filter(fn
+            {:text_delta, _} -> true
+            _ -> false
+          end)
+          |> Stream.map(fn {:text_delta, chunk} -> chunk end)
+
+        # Return the result with the simplified stream
+        {:ok,
+         %{
+           stream: text_only_stream,
+           warnings: result.warnings,
+           provider_metadata: result.provider_metadata
+         }}
+
+      error ->
+        error
+    end
   end
 
   @doc """

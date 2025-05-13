@@ -141,19 +141,6 @@ defmodule AI.Providers.OpenAI.ChatLanguageModel do
   end
 
   @impl LanguageModelV1
-  def do_stream(%__MODULE__{settings: %{simulate_streaming: true}} = model, options) do
-    # We don't need to use adapted_options here since we're calling do_generate
-    # which will convert the options itself
-    case do_generate(model, options) do
-      {:ok, result} ->
-        stream = simulate_stream(result)
-        {:ok, %{stream: stream, raw_call: result.raw_call, warnings: result.warnings}}
-
-      error ->
-        error
-    end
-  end
-
   def do_stream(%__MODULE__{} = model, options) do
     # Convert options for consistency with do_generate
     adapted_options = convert_options(options)
@@ -164,7 +151,10 @@ defmodule AI.Providers.OpenAI.ChatLanguageModel do
     url = get_url(model, "/chat/completions")
     headers = get_headers(model, adapted_options)
 
-    case EventSource.post(url, body, headers, adapted_options) do
+    # Get the EventSource module from application config, fallback to real module
+    event_source_module = Application.get_env(:ai_sdk, :event_source_module, EventSource)
+
+    case event_source_module.post(url, body, headers, adapted_options) do
       {:ok, response} ->
         handle_stream_response(response, body, warnings, model.settings)
 
@@ -514,13 +504,18 @@ defmodule AI.Providers.OpenAI.ChatLanguageModel do
      }}
   end
 
-  defp handle_stream_response(_response, body, warnings, _settings) do
-    # TODO: Implement stream response handling
-    {:ok, %{stream: %{}, raw_call: body, warnings: warnings}}
-  end
+  def handle_stream_response(response, body, warnings, _settings) do
+    # Use the OpenAI transformer to convert the raw stream to standardized events
+    alias AI.Stream.OpenAITransformer
+    alias AI.Stream.Event
 
-  defp simulate_stream(_result) do
-    # TODO: Implement stream simulation
-    %{}
+    # Transform the response stream using our dedicated transformer
+    transformed_stream = OpenAITransformer.transform(response.stream)
+
+    # Convert the transformed stream (now containing Event structs) back to tuple format
+    # This maintains compatibility with the current API while we refactor
+    final_stream = Stream.map(transformed_stream, &Event.to_tuple/1)
+
+    {:ok, %{stream: final_stream, raw_call: body, warnings: warnings}}
   end
 end
