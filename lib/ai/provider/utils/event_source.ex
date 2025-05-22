@@ -367,7 +367,7 @@ defmodule AI.Provider.Utils.EventSource do
       # Emit any remaining data and a finish event
       events =
         if state.data != [] do
-          [format_sse_event(state), {:finish, "stop"}]
+          [format_sse_event(state)]
         else
           [{:finish, "stop"}]
         end
