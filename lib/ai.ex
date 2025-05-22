@@ -59,6 +59,7 @@ defmodule AI do
     * `:frequency_penalty` - Penalize new tokens based on their frequency
     * `:presence_penalty` - Penalize new tokens based on their presence
     * `:tools` - Tools that are accessible to and can be called by the model
+    * `:mode` - Whether to return plain string chunks, or event tuples. Default: 'string'
 
   ## Examples
 
@@ -78,6 +79,11 @@ defmodule AI do
   """
   @spec stream_text(map()) :: {:ok, map()} | {:error, any()}
   def stream_text(options) do
+    mode = Map.get(options, :mode, :string)
+    stream(options, mode)
+  end
+
+  defp stream(options, :string) do
     case StreamText.stream_text(options) do
       {:ok, result} ->
         # Convert the event-based stream to a simple text stream
@@ -93,6 +99,21 @@ defmodule AI do
         {:ok,
          %{
            stream: text_only_stream,
+           warnings: result.warnings,
+           provider_metadata: result.provider_metadata
+         }}
+
+      error ->
+        error
+    end
+  end
+
+  defp stream(options, :event) do
+    case StreamText.stream_text(options) do
+      {:ok, result} ->
+        {:ok,
+         %{
+           stream: result.stream,
            warnings: result.warnings,
            provider_metadata: result.provider_metadata
          }}
