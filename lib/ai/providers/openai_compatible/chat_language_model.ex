@@ -279,8 +279,14 @@ defmodule AI.Providers.OpenAICompatible.ChatLanguageModel do
     # Transform the response stream using our dedicated transformer
     transformed_stream =
       OpenAICompatibleTransformer.transform(response.stream, %{
-        detect_end_of_stream: true
+        detect_end_of_stream: false
       })
+
+    stats =
+      response.stream
+      |> Enum.group_by(&elem(&1, 0))
+      |> Enum.map(fn {k, v} -> {k, Enum.count(v)} end)
+      |> dbg()
 
     # Convert the transformed stream (now containing Event structs) back to tuple format
     Stream.map(transformed_stream, &Event.to_tuple/1)

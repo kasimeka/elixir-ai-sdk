@@ -215,7 +215,8 @@ defmodule AI.Provider.Utils.EventSource do
       ref: options.ref,
       max_line_length: options.max_line_length,
       error: nil,
-      finished: false
+      finished: false,
+      finish_emitted: false
     }
   end
 
@@ -226,7 +227,7 @@ defmodule AI.Provider.Utils.EventSource do
       try do
         # Log streaming request for debugging
         require Logger
-        Logger.debug("Starting Finch.stream request to #{options.url}")
+        #        Logger.debug("Starting Finch.stream request to #{options.url}")
 
         # Define callback function for stream processing
         # The callback should match the Finch.stream/5 signature:
@@ -249,12 +250,12 @@ defmodule AI.Provider.Utils.EventSource do
             {:data, data} ->
               # Debug log can be uncommented when needed
               # _data_preview = if byte_size(data) > 100, do: binary_part(data, 0, 100) <> "...", else: data
-              # Logger.debug("Received data: #{inspect(_data_preview)}")
+              #              # Logger.debug("Received data: #{inspect(_data_preview)}")
               send(options.owner, {:sse_data, options.ref, data})
               {:cont, nil}
 
             :done ->
-              Logger.debug("Stream done event received")
+              #              Logger.debug("Stream done event received")
               send(options.owner, {:sse_done, options.ref})
               {:cont, nil}
 
@@ -333,8 +334,9 @@ defmodule AI.Provider.Utils.EventSource do
       {:sse_done, ref} when ref == state.ref ->
         # Stream complete, emit any remaining data
         events = if state.data != [], do: [format_sse_event(state)], else: []
-        events = events ++ [{:finish, "complete"}]
-        {events, %{state | finished: true}}
+        # Only emit finish event if we haven't already
+        events = if not state.finish_emitted, do: events ++ [{:finish, "complete"}], else: events
+        {events, %{state | finished: true, finish_emitted: true}}
 
       {:sse_error, ref, error} when ref == state.ref ->
         # Stream error
@@ -345,9 +347,10 @@ defmodule AI.Provider.Utils.EventSource do
         # a finish event (LMStudio seems to do this). Instead of treating
         # this as an error, emit a finish event if we've received some data.
         if state.data != [] do
-          # We have received some data, so emit it and a finish event
-          events = [format_sse_event(state), {:finish, "complete"}]
-          {events, %{state | finished: true}}
+          # We have received some data, so emit it and a finish event (if not already emitted)
+          events = [format_sse_event(state)]
+          events = if not state.finish_emitted, do: events ++ [{:finish, "complete"}], else: events
+          {events, %{state | finished: true, finish_emitted: true}}
         else
           # No data received and timeout - continue waiting
           get_next_event(state)
@@ -363,17 +366,22 @@ defmodule AI.Provider.Utils.EventSource do
 
     # Check for the special "data: [DONE]" pattern directly
     if String.contains?(chunk, "data: [DONE]") do
-      Logger.debug("Found [DONE] marker - stream complete")
+      #      Logger.debug("Found [DONE] marker - stream complete")
       # Emit any remaining data and a finish event
       events =
         if state.data != [] do
           [format_sse_event(state)]
         else
-          [{:finish, "stop"}]
+          # Only emit finish event if we haven't already
+          if not state.finish_emitted do
+            [{:finish, "stop"}]
+          else
+            []
+          end
         end
 
       # Mark as finished and return events
-      {events, %{state | finished: true}}
+      {events, %{state | finished: true, finish_emitted: true}}
     else
       # Split by data: patterns to ensure we process multiple events in one chunk
       # This helps catch events that might be concatenated in the same chunk
@@ -404,12 +412,12 @@ defmodule AI.Provider.Utils.EventSource do
     case Regex.run(~r/data: ({.+})/, data_line) do
       [_, json_str] ->
         # Found JSON data, try to parse it
-        Logger.debug("Found JSON data in part: #{json_str}")
+        #        Logger.debug("Found JSON data in part: #{json_str}")
 
         case Jason.decode(json_str) do
           {:ok, parsed} ->
             # Successfully parsed JSON
-            Logger.debug("Successfully parsed JSON from part")
+            #            Logger.debug("Successfully parsed JSON from part")
 
             # Get delta content if available
             content = get_in(parsed, ["choices", Access.at(0), "delta", "content"])
@@ -419,34 +427,41 @@ defmodule AI.Provider.Utils.EventSource do
             # This prevents duplication from our OpenAI transformer
             events =
               if not is_nil(content) and content != "" do
-                Logger.debug("Content found in part: #{inspect(content)}")
+                #                Logger.debug("Content found in part: #{inspect(content)}")
                 events ++ [{:text_delta, content}]
               else
                 # Emit metadata only if there's no content
                 events ++ [{:metadata, parsed}]
               end
 
-            # Add finish event if applicable
+            # Add finish event if applicable, but only if we haven't already emitted one
             events =
-              if not is_nil(finish_reason) and finish_reason != "" do
+              if not is_nil(finish_reason) and finish_reason != "" and not state.finish_emitted do
                 Logger.debug("Finish reason found in part: #{inspect(finish_reason)}")
                 events ++ [{:finish, finish_reason}]
               else
                 events
               end
 
-            {events, state}
+            # Update state to track if we emitted a finish event
+            new_state = if not is_nil(finish_reason) and finish_reason != "" and not state.finish_emitted do
+              %{state | finish_emitted: true}
+            else
+              state
+            end
+
+            {events, new_state}
 
           _ ->
             # Invalid JSON, just append to buffer and continue normally
-            Logger.debug("Failed to parse JSON from part, using normal SSE parsing")
+            #            Logger.debug("Failed to parse JSON from part, using normal SSE parsing")
             buffer = state.buffer <> data_line
             process_buffer_lines(state, buffer, events)
         end
 
       _ ->
         # No JSON pattern found, use normal SSE parsing
-        Logger.debug("No JSON pattern found in part, using normal SSE parsing")
+        #        Logger.debug("No JSON pattern found in part, using normal SSE parsing")
         buffer = state.buffer <> data_line
         process_buffer_lines(state, buffer, events)
     end
@@ -499,8 +514,9 @@ defmodule AI.Provider.Utils.EventSource do
         data = String.trim(String.slice(line, 5..-1//1))
         # Check for special [DONE] marker that LMStudio uses
         if data == "[DONE]" do
-          # Stream is done
-          {%{state | finished: true}, [{:finish, "complete"}]}
+          # Stream is done, only emit finish if not already emitted
+          events = if not state.finish_emitted, do: [{:finish, "complete"}], else: []
+          {%{state | finished: true, finish_emitted: true}, events}
         else
           {%{state | data: state.data ++ [data]}, []}
         end
@@ -565,13 +581,11 @@ defmodule AI.Provider.Utils.EventSource do
         # Some providers don't follow the OpenAI format exactly - check for alternatives
         cond do
           # Check if this is a finish event in standard format
-          finish_reason = get_in(data, ["choices", Access.at(0), "finish_reason"]) ->
-            if not is_nil(finish_reason) and finish_reason != "" do
-              {:finish, finish_reason}
-            else
-              # Just metadata
-              {:metadata, data}
-            end
+          _finish_reason = get_in(data, ["choices", Access.at(0), "finish_reason"]) ->
+            # Note: We don't emit finish events here anymore as they're handled in process_individual_data_part
+            # This prevents duplicate finish events when the same JSON is processed multiple times
+            # Just emit metadata instead
+            {:metadata, data}
 
           # Check for "content" at the top level (some providers do this)
           content = Map.get(data, "content") ->
