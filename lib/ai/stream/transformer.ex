@@ -26,7 +26,7 @@ defmodule AI.Stream.Transformer do
   ## Returns
     * A Stream that emits AI.Stream.Event structs
   """
-  @callback transform(source_stream :: Stream.t(), options :: map()) :: Stream.t()
+  @callback transform(source_stream :: Enumerable.t(), options :: map()) :: Enumerable.t()
 
   @doc """
   Utility function to convert basic tuple event formats to AI.Stream.Event structs.

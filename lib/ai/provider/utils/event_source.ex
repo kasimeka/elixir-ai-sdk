@@ -24,7 +24,7 @@ defmodule AI.Provider.Utils.EventSource do
   * `{:error, reason}` - Error occurred during connection or streaming
   """
   @type response ::
-          {:ok, %{status: integer(), body: binary(), stream: Stream.t()}} | {:error, term()}
+          {:ok, %{status: integer(), body: binary(), stream: Enumerable.t()}} | {:error, term()}
 
   @typedoc """
   Stream events that can be emitted by an SSE stream

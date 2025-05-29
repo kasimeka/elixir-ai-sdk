@@ -81,11 +81,9 @@ The Elixir AI SDK follows similar patterns to the original Vercel AI SDK but use
 
 ## Development Status
 
-This project is under active development. See the [project roadmap](ROADMAP.md) for more information.
+This project is under active development.
 
 ## Documentation
 
-- Getting Started (documentation coming soon)
 - [Streaming Guide](docs/streaming.md) - Real-time text generation with SSE
-- Tool Calling documentation (coming soon)
-- Provider Integration docs (coming soon)
+- Full API documentation available on [HexDocs](https://hexdocs.pm/ai_sdk)
