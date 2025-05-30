@@ -38,14 +38,35 @@ IO.puts(result.text)
 ### Streaming Text Generation
 
 ```elixir
+# Default mode: returns a stream of text strings
 {:ok, result} = AI.stream_text(%{
   model: AI.openai("gpt-4o"),
   system: "You are a friendly assistant!",
   prompt: "Why is the sky blue?"
 })
 
-# Process chunks as they arrive (safely with proper termination)
-r = Enum.reduce_while(result.stream, [], fn
+# Simple string processing
+result.stream
+|> Stream.each(&IO.write/1)
+|> Stream.run()
+
+# Or collect all chunks
+full_text = Enum.join(result.stream, "")
+```
+
+### Advanced Streaming with Event Mode
+
+```elixir
+# Event mode: returns a stream of event tuples for fine-grained control
+{:ok, result} = AI.stream_text(%{
+  model: AI.openai("gpt-4o"),
+  system: "You are a friendly assistant!",
+  prompt: "Why is the sky blue?",
+  mode: :event
+})
+
+# Process different event types
+Enum.reduce_while(result.stream, [], fn
   # Text chunk received - print it and continue
   {:text_delta, chunk}, acc ->
     IO.write(chunk)
@@ -65,8 +86,6 @@ r = Enum.reduce_while(result.stream, [], fn
   _, acc ->
     {:cont, acc}
 end)
-
-IO.inspect(r, label: "Collected chunks")
 ```
 
 ## Architecture

@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test suite based on Vercel AI SDK tests
 - Stream event types: text_delta, tool_call, finish, error
 - Proper backpressure handling for streaming responses
-- Mode option for stream_text to return either raw strings or event tuples
+- Dual streaming modes: `:string` (default) for simple text chunks, `:event` for detailed event tuples
 - Mock language model for testing purposes
 
 ### Features

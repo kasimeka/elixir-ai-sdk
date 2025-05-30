@@ -59,12 +59,14 @@ defmodule AI do
     * `:frequency_penalty` - Penalize new tokens based on their frequency
     * `:presence_penalty` - Penalize new tokens based on their presence
     * `:tools` - Tools that are accessible to and can be called by the model
-    * `:mode` - Whether to return plain string chunks, or event tuples. Default: 'string'
+    * `:mode` - Return format: `:string` (default) for plain text chunks, or `:event` for event tuples
 
   ## Examples
 
+  ### Default String Mode
+
       {:ok, result} = AI.stream_text(%{
-        model: AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com"),
+        model: AI.openai("gpt-3.5-turbo"),
         system: "You are a friendly assistant!",
         prompt: "Why is the sky blue?"
       })
@@ -76,6 +78,32 @@ defmodule AI do
 
       # Or collect all chunks into a single string
       full_text = Enum.join(result.stream, "")
+
+  ### Event Mode
+
+      {:ok, result} = AI.stream_text(%{
+        model: AI.openai("gpt-3.5-turbo"),
+        prompt: "Tell me a story",
+        mode: :event
+      })
+
+      # Process different event types
+      result.stream
+      |> Enum.reduce("", fn
+        {:text_delta, chunk}, acc ->
+          IO.write(chunk)
+          acc <> chunk
+          
+        {:finish, reason}, acc ->
+          IO.puts("\\nFinished: \#{reason}")
+          acc
+          
+        {:error, error}, acc ->
+          IO.puts("\\nError: \#{inspect(error)}")
+          acc
+          
+        _, acc -> acc
+      end)
   """
   @spec stream_text(map()) :: {:ok, map()} | {:error, any()}
   def stream_text(options) do

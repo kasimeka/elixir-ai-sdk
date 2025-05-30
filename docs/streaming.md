@@ -6,9 +6,18 @@ The Elixir AI SDK provides streaming capabilities for text generation, allowing 
 
 The SDK implements Server-Sent Events (SSE) streaming using a robust EventSource implementation based on Finch to efficiently process responses chunk by chunk in real-time with minimal memory overhead. This implementation properly handles backpressure, connection management, and parsing of the SSE protocol.
 
+## Streaming Modes
+
+The SDK supports two streaming modes to accommodate different use cases:
+
+1. **String Mode (Default)**: Returns a stream of plain text chunks, ideal for simple use cases
+2. **Event Mode**: Returns a stream of event tuples for fine-grained control over different event types
+
 ## Getting Started with Streaming
 
-To use streaming with the AI SDK, you can use the `AI.stream_text/1` function, which works similarly to `AI.generate_text/1` but returns a stream of text chunks instead of a complete text response.
+### String Mode (Default)
+
+The default mode returns a stream of text strings, making it extremely simple to use:
 
 ```elixir
 {:ok, result} = AI.stream_text(%{
@@ -16,21 +25,50 @@ To use streaming with the AI SDK, you can use the `AI.stream_text/1` function, w
   prompt: "Write a short story about a robot learning to paint."
 })
 
-# Access the stream from the result
-stream = result.stream
-
 # Process the stream - each chunk is a simple string
-stream
+result.stream
 |> Stream.each(&IO.write/1)  # Write each chunk as it arrives
 |> Stream.run()  # Start consuming the stream
 
 # Or collect all chunks into a single string
-full_text = Enum.join(stream, "")
+full_text = Enum.join(result.stream, "")
+```
+
+### Event Mode
+
+For applications that need to handle different types of streaming events (text, errors, completion), use event mode:
+
+```elixir
+{:ok, result} = AI.stream_text(%{
+  model: AI.openai("gpt-3.5-turbo"),
+  prompt: "Write a short story about a robot learning to paint.",
+  mode: :event  # Enable event mode
+})
+
+# Process different event types
+result.stream
+|> Enum.each(fn
+  {:text_delta, chunk} -> IO.write(chunk)
+  {:finish, reason} -> IO.puts("\nCompleted: #{reason}")
+  {:error, error} -> IO.puts("\nError: #{inspect(error)}")
+  _ -> :ok  # Ignore other events
+end)
 ```
 
 ## Stream Format
 
-The stream produces text chunks directly, making it easy to consume and work with. Each chunk is a string fragment of the model's response. The chunk size varies depending on the model and its tokenization.
+### String Mode Format
+
+In string mode, the stream produces text chunks directly as strings. Each chunk is a fragment of the model's response, making it easy to consume and work with.
+
+### Event Mode Format
+
+In event mode, the stream produces tuples representing different event types:
+
+- `{:text_delta, String.t()}` - A chunk of text from the model
+- `{:finish, String.t()}` - Stream has completed with reason (e.g., "stop", "length")
+- `{:metadata, map()}` - Additional metadata from the model
+- `{:error, term()}` - An error occurred during streaming
 
 These events are produced by parsing the Server-Sent Events (SSE) format returned by AI providers. The SDK handles all the complexities of SSE parsing, including multi-line data fields, JSON parsing, and event formatting.
 
@@ -203,6 +241,7 @@ Options:
 * `:frequency_penalty` - Penalize new tokens based on their frequency
 * `:presence_penalty` - Penalize new tokens based on their presence
 * `:tools` - Tools that are accessible to and can be called by the model
+* `:mode` - Stream output format: `:string` (default) or `:event`
 
 Streaming-specific options:
 * `:timeout` - Connection timeout in milliseconds (default: 30000)
@@ -213,7 +252,7 @@ Streaming-specific options:
 Returns:
 
 * `{:ok, result}` - Success, with result containing:
-  * `stream` - The stream of text chunks
+  * `stream` - The stream of text chunks (strings in string mode, event tuples in event mode)
   * `warnings` - Any warnings generated during processing
   * `provider_metadata` - Additional provider-specific metadata
   * `response` - The raw response from the provider
