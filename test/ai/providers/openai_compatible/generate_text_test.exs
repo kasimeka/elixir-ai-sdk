@@ -9,7 +9,7 @@ defmodule AI.Providers.OpenAICompatible.GenerateTextTest do
   setup do
     provider =
       Provider.new(%{
-        base_url: "https://api.example.com",
+        base_url: "https://api.example.com/v1",
         name: "test-provider",
         api_key: "test-api-key"
       })
@@ -513,7 +513,7 @@ defmodule AI.Providers.OpenAICompatible.GenerateTextTest do
       # Create a provider with custom headers
       provider =
         Provider.new(%{
-          base_url: "https://api.example.com",
+          base_url: "https://api.example.com/v1",
           name: "custom-provider",
           api_key: "test-api-key",
           headers: %{

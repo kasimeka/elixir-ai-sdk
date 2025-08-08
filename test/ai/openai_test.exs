@@ -74,7 +74,7 @@ defmodule AI.OpenAITest do
     end
 
     test "allows custom base URL override" do
-      model = AI.openai("gpt-4", base_url: "https://custom-openai-api.com")
+      model = AI.openai("gpt-4", base_url: "https://custom-openai-api.com/v1")
 
       # Test the URL function
       url = model.config.url.(%{path: "/chat/completions"})

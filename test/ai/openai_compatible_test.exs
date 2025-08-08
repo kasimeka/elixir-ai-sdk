@@ -15,7 +15,7 @@ defmodule AI.OpenAICompatibleTest do
     end
 
     test "creates an OpenAI-compatible model with the required parameters" do
-      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com/v1")
 
       # Verify the model is a ChatLanguageModel struct
       assert %ChatLanguageModel{} = model
@@ -25,13 +25,13 @@ defmodule AI.OpenAICompatibleTest do
 
       # Verify the provider is set correctly
       assert %Provider{} = model.provider
-      assert model.provider.base_url == "https://api.example.com"
+      assert model.provider.base_url == "https://api.example.com/v1"
     end
 
     test "handles both keyword list and map for options" do
       # Test with keyword list
-      model1 = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
-      assert model1.provider.base_url == "https://api.example.com"
+      model1 = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com/v1")
+      assert model1.provider.base_url == "https://api.example.com/v1"
 
       # Test with map
       model2 = AI.openai_compatible("gpt-3.5-turbo", %{base_url: "https://api.other.com"})
@@ -41,7 +41,7 @@ defmodule AI.OpenAICompatibleTest do
     test "sets additional options correctly" do
       model =
         AI.openai_compatible("gpt-3.5-turbo",
-          base_url: "https://api.example.com",
+          base_url: "https://api.example.com/v1",
           api_key: "test-api-key",
           headers: %{"X-Custom-Header" => "test-value"},
           supports_image_urls: true,
@@ -91,7 +91,7 @@ defmodule AI.OpenAICompatibleTest do
       end)
 
       # Create an OpenAI-compatible model
-      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com/v1")
 
       # Use the model with generate_text
       {:ok, result} =
@@ -164,7 +164,7 @@ defmodule AI.OpenAICompatibleTest do
       end)
 
       # Create an OpenAI-compatible model
-      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com/v1")
 
       # Use the model with generate_text using a prompt parameter instead of messages
       {:ok, result} =
@@ -230,7 +230,7 @@ defmodule AI.OpenAICompatibleTest do
       end)
 
       # Create an OpenAI-compatible model
-      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
+      model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com/v1")
 
       # Use the model with generate_text using both system and prompt parameters
       {:ok, result} =

@@ -169,8 +169,8 @@ defmodule AI do
       model = AI.openai_compatible("gpt-3.5-turbo", base_url: "https://api.example.com")
       
       # With API key
-      model = AI.openai_compatible("gpt-4", 
-        base_url: "https://api.openai.com", 
+      model = AI.openai_compatible("gpt-4",
+        base_url: "https://api.openai.com/v1",
         api_key: System.get_env("OPENAI_API_KEY")
       )
   """
@@ -220,7 +220,7 @@ defmodule AI do
     api_key = Map.get(opts, :api_key) || System.get_env("OPENAI_API_KEY")
 
     # Get base URL from options or use default
-    base_url = Map.get(opts, :base_url, "https://api.openai.com")
+    base_url = Map.get(opts, :base_url, "https://api.openai.com/v1")
 
     # Extract settings from options
     settings =
@@ -236,7 +236,7 @@ defmodule AI do
 
     # Configure URL function
     url_fn = fn %{path: path} ->
-      "#{String.trim_trailing(base_url, "/")}/v1#{path}"
+      "#{String.trim_trailing(base_url, "/")}#{path}"
     end
 
     # Create the config
@@ -275,7 +275,7 @@ defmodule AI do
     api_key = Map.get(opts, :api_key) || System.get_env("OPENAI_API_KEY")
 
     # Get base URL from options or use default
-    base_url = Map.get(opts, :base_url, "https://api.openai.com")
+    base_url = Map.get(opts, :base_url, "https://api.openai.com/v1")
 
     # Extract settings from options
     settings = Map.take(opts, [])
@@ -290,7 +290,7 @@ defmodule AI do
 
     # Configure URL function
     url_fn = fn %{path: path} ->
-      "#{String.trim_trailing(base_url, "/")}/v1#{path}"
+      "#{String.trim_trailing(base_url, "/")}#{path}"
     end
 
     # Create the config

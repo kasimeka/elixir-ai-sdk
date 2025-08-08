@@ -69,7 +69,7 @@ defmodule AI.Providers.OpenAICompatible.ChatLanguageModel do
     request_body = add_optional_params(request_body, opts)
 
     # Make API request
-    case make_api_request(model.provider, "/v1/chat/completions", request_body) do
+    case make_api_request(model.provider, "/chat/completions", request_body) do
       {:ok, response} ->
         # Process API response and return result
         process_response(response)
@@ -244,7 +244,7 @@ defmodule AI.Providers.OpenAICompatible.ChatLanguageModel do
     request_body = add_optional_params(request_body, opts)
 
     # Create URL and headers
-    url = "#{model.provider.base_url}/v1/chat/completions"
+    url = "#{model.provider.base_url}/chat/completions"
     headers = ensure_headers_map(model.provider.headers)
 
     # Get the EventSource module to use (allows mocking)
